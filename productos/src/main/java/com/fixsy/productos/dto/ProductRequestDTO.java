@@ -1,9 +1,9 @@
 package com.fixsy.productos.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,45 +14,35 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "DTO para crear o actualizar un producto de Fixsy Parts")
+@Schema(description = "DTO para crear o actualizar un producto en el dashboard de admin")
 public class ProductRequestDTO {
     @NotBlank(message = "El nombre es obligatorio")
-    @Schema(description = "Nombre del producto", example = "Filtro de aceite", required = true)
-    private String nombre;
+    @Schema(description = "Nombre del producto", example = "Filtro de aceite", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String name;
 
-    @Schema(description = "Descripción del producto", example = "Filtro de aceite estándar para motores 1.6-2.0L")
-    private String descripcion;
+    @Schema(description = "Descripcion extendida del producto", example = "Detalles tecnicos y compatibilidades")
+    private String description;
 
     @NotNull(message = "El precio es obligatorio")
     @Min(value = 0, message = "El precio no puede ser negativo")
-    @Schema(description = "Precio del producto en pesos", example = "9990", required = true)
-    private BigDecimal precio;
-
-    @Min(value = 0, message = "El precio de oferta no puede ser negativo")
-    @Schema(description = "Precio de oferta (opcional)", example = "7990")
-    private BigDecimal precioOferta;
+    @Schema(description = "Precio base del producto", example = "9990", requiredMode = Schema.RequiredMode.REQUIRED)
+    private BigDecimal price;
 
     @NotNull(message = "El stock es obligatorio")
     @Min(value = 0, message = "El stock no puede ser negativo")
-    @Schema(description = "Stock disponible", example = "12", required = true)
+    @Schema(description = "Stock disponible", example = "12", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer stock;
 
-    @Schema(description = "Tags/etiquetas del producto", example = "[\"motor\", \"mantenimiento\"]")
-    private List<String> tags;
+    @Schema(description = "ID de la categoria asociada", example = "3")
+    private Long categoryId;
 
-    @Schema(description = "URL de imagen principal", example = "https://example.com/filtro.jpg")
-    private String imagen;
+    @Schema(description = "IDs de tags asociados", example = "[1,2,3]")
+    private List<Long> tagIds;
 
-    @Schema(description = "URLs de imágenes adicionales")
-    private List<String> images;
+    @Schema(description = "Porcentaje de descuento a aplicar", example = "15")
+    private Integer discountPercentage;
 
-    @Schema(description = "Categoría del producto", example = "Filtros")
-    private String categoria;
-
-    @Schema(description = "Marca del repuesto", example = "Bosch")
-    private String marca;
-
-    @Schema(description = "SKU/Código del producto", example = "FLT-001")
+    @Schema(description = "SKU/Codigo del producto", example = "FLT-001")
     private String sku;
 
     @Schema(description = "Marcar como producto destacado", example = "false")
@@ -60,5 +50,18 @@ public class ProductRequestDTO {
 
     @Schema(description = "Producto activo/visible", example = "true")
     private Boolean isActive = true;
-}
 
+    // Métodos de compatibilidad con naming previo (nombre/precioNormal/precioOferta)
+    public String getNombre() { return name; }
+    public void setNombre(String nombre) { this.name = nombre; }
+    public BigDecimal getPrecioNormal() { return price; }
+    public void setPrecioNormal(BigDecimal precioNormal) { this.price = precioNormal; }
+    public BigDecimal getPrecioOferta() { return null; }
+    public void setPrecioOferta(BigDecimal ignored) { /* sin uso: se migra a discountPercentage */ }
+    public String getDescripcion() { return description; }
+    public void setDescripcion(String descripcion) { this.description = descripcion; }
+    public String getDescripcionCorta() { return description; }
+    public void setDescripcionCorta(String descripcionCorta) { this.description = descripcionCorta; }
+    public Integer getStock() { return stock; }
+    public void setStock(Integer stock) { this.stock = stock; }
+}

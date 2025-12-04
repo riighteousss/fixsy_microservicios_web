@@ -1,1 +1,8 @@
-*.exe
+.exe
+.vscode/
+**/target/
+usuarios/uploads/
+productos/uploads/
+mensajes/target/
+ordenes/target/
+*.log

@@ -1,24 +1,29 @@
 package com.fixsy.ordenes.service;
 
-import com.fixsy.ordenes.dto.*;
+import com.fixsy.ordenes.dto.OrderDTO;
+import com.fixsy.ordenes.dto.OrderItemDTO;
+import com.fixsy.ordenes.dto.OrderItemRequestDTO;
+import com.fixsy.ordenes.dto.OrderRequestDTO;
 import com.fixsy.ordenes.model.Order;
 import com.fixsy.ordenes.model.OrderItem;
-import com.fixsy.ordenes.repository.OrderRepository;
 import com.fixsy.ordenes.repository.OrderItemRepository;
+import com.fixsy.ordenes.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
     @Autowired
     private OrderRepository orderRepository;
-    
+
     @Autowired
     private OrderItemRepository orderItemRepository;
 
@@ -66,21 +71,45 @@ public class OrderService {
 
     @Transactional
     public OrderDTO createOrder(OrderRequestDTO request) {
-        // Calcular subtotal
+        if (request.getItems() == null || request.getItems().isEmpty()) {
+            throw new IllegalArgumentException("La orden debe tener al menos un item");
+        }
+
         BigDecimal subtotal = BigDecimal.ZERO;
         for (OrderItemRequestDTO item : request.getItems()) {
-            BigDecimal itemSubtotal = item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+            if (item.getQuantity() == null || item.getQuantity() <= 0) {
+                throw new IllegalArgumentException("La cantidad del item debe ser mayor a 0");
+            }
+            if (item.getProductSku() == null || item.getProductSku().isBlank()) {
+                throw new IllegalArgumentException("El SKU del producto es obligatorio");
+            }
+
+            BigDecimal original = item.getPrecio() != null ? item.getPrecio() : item.getUnitPrice();
+            BigDecimal effective = item.getPrecioOferta() != null && item.getPrecioOferta().compareTo(BigDecimal.ZERO) > 0
+                    ? item.getPrecioOferta()
+                    : original;
+            if (original == null) {
+                original = effective;
+            }
+            if (effective == null) {
+                effective = original;
+            }
+            if (original == null) {
+                throw new IllegalArgumentException("Precio del item no puede ser nulo");
+            }
+            if (effective.compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("El precio del item no puede ser negativo");
+            }
+            BigDecimal itemSubtotal = effective.multiply(BigDecimal.valueOf(item.getQuantity()));
             subtotal = subtotal.add(itemSubtotal);
         }
-        
-        // Costo de envío (usar el proporcionado o calcular)
-        BigDecimal shippingCost = request.getShippingCost() != null ? 
-                request.getShippingCost() : calculateShippingCost(request.getShippingRegion());
-        
-        // Total
+
+        BigDecimal shippingCost = request.getShippingCost() != null
+                ? request.getShippingCost()
+                : calculateShippingCost(request.getShippingRegion());
+
         BigDecimal total = subtotal.add(shippingCost);
 
-        // Crear orden
         Order order = new Order();
         order.setUserId(request.getUserId());
         order.setUserEmail(request.getUserEmail());
@@ -96,21 +125,42 @@ public class OrderService {
         order.setPaymentMethod(request.getPaymentMethod());
         order.setNotes(request.getNotes());
 
-        Order savedOrder = orderRepository.save(order);
-
-        // Crear items
+        List<OrderItem> items = new ArrayList<>();
         for (OrderItemRequestDTO itemRequest : request.getItems()) {
+            BigDecimal original = itemRequest.getPrecio() != null ? itemRequest.getPrecio() : itemRequest.getUnitPrice();
+            BigDecimal effective = itemRequest.getPrecioOferta() != null && itemRequest.getPrecioOferta().compareTo(BigDecimal.ZERO) > 0
+                    ? itemRequest.getPrecioOferta()
+                    : original;
+            if (original == null) {
+                original = effective;
+            }
+            if (effective == null) {
+                effective = original;
+            }
+            BigDecimal discount = original.subtract(effective);
+            if (discount.compareTo(BigDecimal.ZERO) < 0) {
+                discount = BigDecimal.ZERO;
+            }
+
             OrderItem item = new OrderItem();
-            item.setOrderId(savedOrder.getId());
             item.setProductId(itemRequest.getProductId());
             item.setProductName(itemRequest.getProductName());
             item.setProductSku(itemRequest.getProductSku());
             item.setQuantity(itemRequest.getQuantity());
-            item.setUnitPrice(itemRequest.getUnitPrice());
-            item.setSubtotal(itemRequest.getUnitPrice().multiply(BigDecimal.valueOf(itemRequest.getQuantity())));
+            item.setOriginalUnitPrice(original);
+            item.setUnitPrice(effective);
+            item.setDiscountUnitAmount(discount);
+            item.setSubtotal(effective.multiply(BigDecimal.valueOf(itemRequest.getQuantity())));
+            items.add(item);
+        }
+        order.setItems(items);
+
+        Order savedOrder = orderRepository.save(order);
+        for (OrderItem item : items) {
+            item.setOrder(savedOrder);
             orderItemRepository.save(item);
         }
-
+        savedOrder.setItems(items);
         return convertToDTO(savedOrder);
     }
 
@@ -118,10 +168,10 @@ public class OrderService {
     public OrderDTO updateOrderStatus(Long id, String status) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Orden no encontrada"));
-        
+
+        validateStatus(status);
         order.setStatus(status);
-        
-        // Actualizar timestamps según el estado
+
         LocalDateTime now = LocalDateTime.now();
         switch (status) {
             case "Pagado":
@@ -133,8 +183,10 @@ public class OrderService {
             case "Entregado":
                 order.setDeliveredAt(now);
                 break;
+            default:
+                break;
         }
-        
+
         Order updatedOrder = orderRepository.save(order);
         return convertToDTO(updatedOrder);
     }
@@ -143,9 +195,9 @@ public class OrderService {
     public OrderDTO updateTrackingNumber(Long id, String trackingNumber) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Orden no encontrada"));
-        
+
         order.setTrackingNumber(trackingNumber);
-        
+
         Order updatedOrder = orderRepository.save(order);
         return convertToDTO(updatedOrder);
     }
@@ -154,11 +206,11 @@ public class OrderService {
     public OrderDTO updatePaymentReference(Long id, String paymentReference) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Orden no encontrada"));
-        
+
         order.setPaymentReference(paymentReference);
         order.setStatus("Pagado");
         order.setPaidAt(LocalDateTime.now());
-        
+
         Order updatedOrder = orderRepository.save(order);
         return convertToDTO(updatedOrder);
     }
@@ -167,25 +219,22 @@ public class OrderService {
     public OrderDTO addAdminNote(Long id, String note) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Orden no encontrada"));
-        
+
         String currentNotes = order.getAdminNotes() != null ? order.getAdminNotes() : "";
         String timestamp = LocalDateTime.now().toString();
         order.setAdminNotes(currentNotes + "\n[" + timestamp + "] " + note);
-        
+
         Order updatedOrder = orderRepository.save(order);
         return convertToDTO(updatedOrder);
     }
 
     @Transactional
     public void deleteOrder(Long id) {
-        if (!orderRepository.existsById(id)) {
-            throw new RuntimeException("Orden no encontrada");
-        }
-        orderItemRepository.deleteByOrderId(id);
-        orderRepository.deleteById(id);
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Orden no encontrada"));
+        orderRepository.delete(order);
     }
 
-    // Estadísticas
     public Long countOrdersByStatus(String status) {
         return orderRepository.countByStatus(status);
     }
@@ -204,14 +253,22 @@ public class OrderService {
         return total != null ? total : BigDecimal.ZERO;
     }
 
+    private void validateStatus(String status) {
+        Set<String> allowed = Set.of("Pendiente", "Pagado", "Enviado", "Entregado", "Cancelado");
+        if (!allowed.contains(status)) {
+            throw new IllegalArgumentException("Estado no valido");
+        }
+    }
+
     private BigDecimal calculateShippingCost(String region) {
-        // Lógica básica de costo de envío por región
-        if (region == null) return new BigDecimal("5990");
-        
+        if (region == null) {
+            return new BigDecimal("5990");
+        }
+
         switch (region.toLowerCase()) {
             case "metropolitana":
                 return new BigDecimal("3990");
-            case "valparaíso":
+            case "valparaiso":
             case "o'higgins":
                 return new BigDecimal("4990");
             default:
@@ -241,11 +298,10 @@ public class OrderService {
         dto.setPaidAt(order.getPaidAt());
         dto.setShippedAt(order.getShippedAt());
         dto.setDeliveredAt(order.getDeliveredAt());
-        
-        // Cargar items
-        List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
+
+        List<OrderItem> items = orderItemRepository.findByOrder_Id(order.getId());
         dto.setItems(items.stream().map(this::convertItemToDTO).collect(Collectors.toList()));
-        
+
         return dto;
     }
 
@@ -256,9 +312,10 @@ public class OrderService {
                 item.getProductName(),
                 item.getProductSku(),
                 item.getQuantity(),
+                item.getOriginalUnitPrice(),
                 item.getUnitPrice(),
+                item.getDiscountUnitAmount(),
                 item.getSubtotal()
         );
     }
 }
-

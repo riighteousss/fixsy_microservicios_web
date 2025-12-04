@@ -26,11 +26,16 @@ public class OrderItemDTO {
     
     @Schema(description = "Cantidad", example = "2")
     private Integer quantity;
+
+    @Schema(description = "Precio unitario original", example = "9990")
+    private BigDecimal originalUnitPrice;
     
     @Schema(description = "Precio unitario", example = "9990")
     private BigDecimal unitPrice;
+
+    @Schema(description = "Descuento por unidad", example = "1000")
+    private BigDecimal discountUnitAmount;
     
     @Schema(description = "Subtotal del item", example = "19980")
     private BigDecimal subtotal;
 }
-

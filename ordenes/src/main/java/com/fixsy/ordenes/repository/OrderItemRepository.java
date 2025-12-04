@@ -12,10 +12,10 @@ import java.util.List;
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     
     // Obtener items de una orden
-    List<OrderItem> findByOrderId(Long orderId);
+    List<OrderItem> findByOrder_Id(Long orderId);
     
     // Eliminar items de una orden
-    void deleteByOrderId(Long orderId);
+    void deleteByOrder_Id(Long orderId);
     
     // Contar ventas de un producto
     @Query("SELECT SUM(oi.quantity) FROM OrderItem oi WHERE oi.productId = :productId")
@@ -26,4 +26,3 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
            "FROM OrderItem oi GROUP BY oi.productId, oi.productName ORDER BY totalQty DESC")
     List<Object[]> getTopSellingProducts();
 }
-

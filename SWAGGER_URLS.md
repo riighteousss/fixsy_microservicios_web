@@ -1,49 +1,49 @@
-# 📖 URLs de Documentación Swagger - Fixsy Parts
+# Swagger, rutas y credenciales - Fixsy Parts
 
-## Microservicios Disponibles (4)
+## Swagger UI y OpenAPI (localhost)
+- Usuarios (8081): UI http://localhost:8081/swagger-ui  | JSON http://localhost:8081/api-docs  | Base `/api/v1`
+- Productos (8083): UI http://localhost:8083/swagger-ui/index.html  | JSON http://localhost:8083/api-docs
+- Ordenes (8084): UI http://localhost:8084/swagger-ui  | JSON http://localhost:8084/api-docs
+- Mensajes/Tickets (8085): UI http://localhost:8085/swagger-ui  | JSON http://localhost:8085/api-docs
+///Puedes usar usuario fixsy y contraseña Fixsy2025! para acceder a http://localhost:8084/swagger-ui y http://localhost:8085/swagger-ui (y sus /api-docs). Reinicia cada servicio después de cambiar las propiedades para que se apliquen.
+## Rutas base de cada API
+- Usuarios: `/api/v1/users`, `/api/v1/roles`
+- Productos: `/api/products`
+- Ordenes: `/api/orders`
+- Mensajes/Tickets: `/api/tickets`, `/api/messages`
 
-### 1. Usuarios (Puerto 8081)
-- **Swagger UI:** http://localhost:8081/swagger-ui
-- **OpenAPI JSON:** http://localhost:8081/api-docs
+## Credenciales de prueba (login JWT en usuarios)
+- Admin (Administrador): `admin@admin.fixsy.com` / `Admin123`
+- Soporte: `soporte@soporte.fixsy.com` / `Soporte123`
+- Vendedor: `vendedor@vendedor.fixsy.com` / `Vendedor123`
+- Cliente: `cliente@cliente.fixsy.com` / `Cliente123`
+- Usuario (compat): `usuario@fixsy.com` / `Usuario123`
 
-### 2. Productos (Puerto 8083)
-- **Swagger UI:** http://localhost:8083/swagger-ui
-- **OpenAPI JSON:** http://localhost:8083/api-docs
+Flujo: POST a `/api/v1/users/login` con email/password -> usar `token` en header `Authorization: Bearer <token>` para endpoints protegidos.
 
-### 3. Órdenes (Puerto 8084)
-- **Swagger UI:** http://localhost:8084/swagger-ui
-- **OpenAPI JSON:** http://localhost:8084/api-docs
+## Tips rapidos de base de datos (MySQL)
+- Host local: `jdbc:mysql://localhost:3306/<db>?createDatabaseIfNotExist=true`
+- Usuario por defecto: `root` | Password: vacio (segun application.properties)
+- Bases usadas: `fixsy_usuarios`, `fixsy_productos`, `fixsy_ordenes`, `fixsy_mensajes`
+- DDL: `spring.jpa.hibernate.ddl-auto=update` (crea/ajusta tablas automaticamente)
+- Ver datos rapido:
+  ```sql
+  SHOW DATABASES;
+  USE fixsy_productos;
+  SHOW TABLES;
+  SELECT * FROM products LIMIT 5;
+  ```
+- Seed de ejemplo: `productos/src/main/java/com/fixsy/productos/config/ProductosDataLoader.java` crea productos iniciales si la tabla esta vacia.
+- Config por servicio:
+  - usuarios/src/main/resources/application.properties
+  - productos/src/main/resources/application.properties
+  - ordenes/src/main/resources/application.properties
+  - mensajes/src/main/resources/application.properties
 
-### 4. Mensajes/Tickets (Puerto 8085)
-- **Swagger UI:** http://localhost:8085/swagger-ui
-- **OpenAPI JSON:** http://localhost:8085/api-docs
-
-## Resumen de Endpoints
-
-| Microservicio | Base URL | Funcionalidad |
-|---------------|----------|---------------|
-| Usuarios | `/api/users`, `/api/roles` | Registro, login, gestión de usuarios y roles |
-| Productos | `/api/products` | Catálogo de repuestos |
-| Órdenes | `/api/orders` | Compras y seguimiento |
-| Mensajes | `/api/tickets`, `/api/messages` | Soporte al cliente |
-
-## Para iniciar los microservicios
-
+## Levantar microservicios en local
 ```bash
-# Cada uno en su terminal
-cd usuarios && mvn spring-boot:run    # Puerto 8081
-cd productos && mvn spring-boot:run   # Puerto 8083
-cd ordenes && mvn spring-boot:run     # Puerto 8084
-cd mensajes && mvn spring-boot:run    # Puerto 8085
+cd usuarios  && mvn spring-boot:run   # 8081
+cd productos && mvn spring-boot:run   # 8083
+cd ordenes  && mvn spring-boot:run    # 8084
+cd mensajes && mvn spring-boot:run    # 8085
 ```
-
-## Bases de Datos (MySQL)
-
-| Microservicio | Base de Datos |
-|---------------|---------------|
-| usuarios | fixsy_usuarios |
-| productos | fixsy_productos |
-| ordenes | fixsy_ordenes |
-| mensajes | fixsy_mensajes |
-
-*Las bases de datos se crean automáticamente al iniciar cada microservicio.*

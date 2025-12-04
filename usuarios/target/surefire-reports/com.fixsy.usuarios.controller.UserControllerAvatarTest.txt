@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.fixsy.usuarios.controller.UserControllerAvatarTest
+-------------------------------------------------------------------------------
+Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.688 s -- in com.fixsy.usuarios.controller.UserControllerAvatarTest

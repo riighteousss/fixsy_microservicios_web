@@ -23,12 +23,15 @@ public class UserDTO {
     
     @Schema(description = "Apellido del usuario", example = "Pérez")
     private String apellido;
+
+    @Schema(description = "ID del rol (camelCase roleId)", example = "2")
+    private Long roleId;
     
     @Schema(description = "Teléfono del usuario", example = "+56912345678")
     private String phone;
     
     @Schema(description = "Rol del usuario")
-    private RoleDTO role;
+    private RoleSummaryDTO role;
     
     @Schema(description = "Estado del usuario", example = "Activo", allowableValues = {"Activo", "Bloqueado", "Suspendido"})
     private String status;

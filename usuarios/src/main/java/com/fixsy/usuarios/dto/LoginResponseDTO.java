@@ -18,5 +18,7 @@ public class LoginResponseDTO {
     
     @Schema(description = "Datos del usuario autenticado")
     private UserDTO user;
-}
 
+    @Schema(description = "Token JWT para autenticaci\u00f3n posterior")
+    private String token;
+}

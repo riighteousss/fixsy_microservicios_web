@@ -2,12 +2,16 @@ package com.fixsy.usuarios.service;
 
 import com.fixsy.usuarios.dto.LoginRequestDTO;
 import com.fixsy.usuarios.dto.LoginResponseDTO;
+import com.fixsy.usuarios.dto.RoleSummaryDTO;
 import com.fixsy.usuarios.dto.UserDTO;
 import com.fixsy.usuarios.dto.UserRequestDTO;
 import com.fixsy.usuarios.model.Role;
 import com.fixsy.usuarios.model.User;
 import com.fixsy.usuarios.repository.UserRepository;
+import com.fixsy.usuarios.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -21,6 +25,12 @@ public class UserService {
 
     @Autowired
     private RoleService roleService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
 
     public List<UserDTO> getAllUsers() {
         return userRepository.findAll().stream()
@@ -54,57 +64,73 @@ public class UserService {
 
     public LoginResponseDTO login(LoginRequestDTO loginRequest) {
         User user = userRepository.findByEmail(loginRequest.getEmail()).orElse(null);
-        
+
         if (user == null) {
-            return new LoginResponseDTO(false, "Usuario no encontrado", null);
+            return new LoginResponseDTO(false, "Usuario no encontrado", null, null);
         }
-        
-        // En producción usar BCrypt para comparar contraseñas hasheadas
-        if (!user.getPassword().equals(loginRequest.getPassword())) {
-            return new LoginResponseDTO(false, "Contraseña incorrecta", null);
+
+        boolean passwordMatches = user.getPassword() != null &&
+                (user.getPassword().startsWith("$2")
+                        ? passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())
+                        : user.getPassword().equals(loginRequest.getPassword()));
+
+        if (!passwordMatches) {
+            return new LoginResponseDTO(false, "Contrasena incorrecta", null, null);
         }
-        
+
+        // Si estaba en texto plano, re-encodear para las siguientes veces
+        if (!user.getPassword().startsWith("$2")) {
+            user.setPassword(passwordEncoder.encode(loginRequest.getPassword()));
+            userRepository.save(user);
+        }
+
         if ("Bloqueado".equals(user.getStatus())) {
-            return new LoginResponseDTO(false, "Usuario bloqueado", null);
+            return new LoginResponseDTO(false, "Usuario bloqueado", null, null);
         }
-        
+
         if ("Suspendido".equals(user.getStatus())) {
-            if (user.getSuspensionHasta() != null && 
+            if (user.getSuspensionHasta() != null &&
                 user.getSuspensionHasta().isAfter(LocalDateTime.now())) {
-                return new LoginResponseDTO(false, 
-                    "Usuario suspendido hasta " + user.getSuspensionHasta(), null);
+                return new LoginResponseDTO(false,
+                    "Usuario suspendido hasta " + user.getSuspensionHasta(), null, null);
             } else {
-                // Reactivar usuario si la suspensión expiró
                 user.setStatus("Activo");
                 user.setSuspensionHasta(null);
                 userRepository.save(user);
             }
         }
-        
-        return new LoginResponseDTO(true, "Login exitoso", convertToDTO(user));
+
+        String token = jwtTokenProvider.generateToken(
+                new org.springframework.security.core.userdetails.User(
+                        user.getEmail(),
+                        user.getPassword(),
+                        List.of(new SimpleGrantedAuthority(
+                                "ROLE_" + (user.getRole() != null ? user.getRole().getNombre() : "Usuario")
+                        ))
+                )
+        );
+
+        return new LoginResponseDTO(true, "Login exitoso", convertToDTO(user), token);
     }
 
     public UserDTO createUser(UserRequestDTO userRequest) {
         if (userRepository.existsByEmail(userRequest.getEmail())) {
-            throw new RuntimeException("El email ya está registrado");
+            throw new RuntimeException("El email ya esta registrado");
         }
 
-        // Determinar rol automáticamente por dominio de email
         Role role;
         if (userRequest.getRoleId() != null) {
-            // Si se proporciona un roleId, usarlo (para admins creando usuarios)
             role = roleService.getRoleEntityById(userRequest.getRoleId());
         } else {
-            // Determinar rol por dominio de email
             role = roleService.determineRoleByEmail(userRequest.getEmail());
         }
 
         User user = new User();
         user.setEmail(userRequest.getEmail());
-        user.setPassword(userRequest.getPassword()); // En producción, hashear con BCrypt
+        user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
         user.setNombre(userRequest.getNombre());
         user.setApellido(userRequest.getApellido());
-        user.setPhone(userRequest.getPhone());
+        user.setPhone(normalizePhone(userRequest.getPhone()));
         user.setRole(role);
         user.setStatus(userRequest.getStatus() != null ? userRequest.getStatus() : "Activo");
         user.setProfilePic(userRequest.getProfilePic());
@@ -118,18 +144,15 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // Verificar email único si cambió
         if (!user.getEmail().equalsIgnoreCase(userRequest.getEmail()) &&
             userRepository.existsByEmail(userRequest.getEmail())) {
-            throw new RuntimeException("El email ya está en uso por otro usuario");
+            throw new RuntimeException("El email ya esta en uso por otro usuario");
         }
 
-        // Si el email cambia, re-evaluar el rol
         if (!user.getEmail().equalsIgnoreCase(userRequest.getEmail())) {
             Role newRole = roleService.determineRoleByEmail(userRequest.getEmail());
             user.setRole(newRole);
         } else if (userRequest.getRoleId() != null) {
-            // Si se proporciona roleId explícito, usarlo
             Role role = roleService.getRoleEntityById(userRequest.getRoleId());
             user.setRole(role);
         }
@@ -137,12 +160,11 @@ public class UserService {
         user.setEmail(userRequest.getEmail());
         user.setNombre(userRequest.getNombre());
         user.setApellido(userRequest.getApellido());
-        user.setPhone(userRequest.getPhone());
-        
-        // Solo actualizar contraseña si se proporciona
-        if (userRequest.getPassword() != null && !userRequest.getPassword().isEmpty() && 
+        user.setPhone(normalizePhone(userRequest.getPhone()));
+
+        if (userRequest.getPassword() != null && !userRequest.getPassword().isEmpty() &&
             userRequest.getPassword().length() >= 8) {
-            user.setPassword(userRequest.getPassword()); // En producción, hashear
+            user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
         }
 
         if (userRequest.getStatus() != null) {
@@ -160,14 +182,14 @@ public class UserService {
     public UserDTO updateUserStatus(Long id, String status, LocalDateTime suspensionHasta) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-        
+
         user.setStatus(status);
         if ("Suspendido".equals(status)) {
             user.setSuspensionHasta(suspensionHasta);
         } else {
             user.setSuspensionHasta(null);
         }
-        
+
         User updatedUser = userRepository.save(user);
         return convertToDTO(updatedUser);
     }
@@ -175,10 +197,10 @@ public class UserService {
     public UserDTO updateUserRole(Long id, Long roleId) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-        
+
         Role role = roleService.getRoleEntityById(roleId);
         user.setRole(role);
-        
+
         User updatedUser = userRepository.save(user);
         return convertToDTO(updatedUser);
     }
@@ -190,14 +212,39 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
+    public UserDTO updateUserProfilePic(Long id, String profilePicPath) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        user.setProfilePic(profilePicPath);
+        User updated = userRepository.save(user);
+        return convertToDTO(updated);
+    }
+
+    private String normalizePhone(String phone) {
+        return phone == null ? "" : phone.trim();
+    }
+
     private UserDTO convertToDTO(User user) {
+        Role role = user.getRole();
+        RoleSummaryDTO roleSummary = null;
+        Long roleId = null;
+        if (role != null) {
+            roleId = role.getId();
+            roleSummary = new RoleSummaryDTO(
+                    role.getId(),
+                    role.getNombre(),
+                    role.getDescripcion()
+            );
+        }
+
         return new UserDTO(
                 user.getId(),
                 user.getEmail(),
                 user.getNombre(),
                 user.getApellido(),
+                roleId,
                 user.getPhone(),
-                roleService.convertToDTO(user.getRole()),
+                roleSummary,
                 user.getStatus(),
                 user.getProfilePic(),
                 user.getSuspensionHasta(),

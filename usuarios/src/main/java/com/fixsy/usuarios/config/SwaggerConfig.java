@@ -9,14 +9,14 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class SwaggerConfig {
-    
+
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("Fixsy Parts - API de Usuarios")
+                        .title("Fixsy Parts - API de Usuarios (v1)")
                         .version("1.0.0")
-                        .description("API REST para gestión de usuarios de Fixsy Parts - Tienda de Repuestos")
+                        .description("API REST para gestion de usuarios. Base path: /api/v1")
                         .contact(new Contact()
                                 .name("Fixsy Parts")
                                 .email("soporte@fixsy.com"))

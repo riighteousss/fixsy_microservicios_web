@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/roles")
+@RequestMapping({"/api/v1/roles", "/api/roles"})
 @CrossOrigin(origins = "*")
 @Tag(name = "Role Controller", description = "API para consultar roles de usuario")
 public class RoleController {
@@ -39,4 +39,3 @@ public class RoleController {
         return ResponseEntity.ok(roleService.getRoleByNombre(nombre));
     }
 }
-

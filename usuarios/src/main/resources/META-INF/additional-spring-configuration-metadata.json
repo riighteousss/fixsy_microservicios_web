@@ -1,0 +1,10 @@
+{
+  "properties": [
+    {
+      "name": "file.upload-dir.profile",
+      "type": "java.lang.String",
+      "description": "Directorio base para almacenar las imagenes de perfil de usuarios.",
+      "defaultValue": "uploads/profile"
+    }
+  ]
+}

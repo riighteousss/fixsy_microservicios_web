@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "tickets")
@@ -17,7 +19,7 @@ public class Ticket {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id", nullable = true)
     private Long userId;
 
     @Column(name = "user_email", nullable = false)
@@ -56,6 +58,9 @@ public class Ticket {
     @Column(name = "closed_at")
     private LocalDateTime closedAt;
 
+    @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Message> messages = new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -68,5 +73,9 @@ public class Ticket {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
-}
 
+    public void addMessage(Message message) {
+        messages.add(message);
+        message.setTicket(this);
+    }
+}

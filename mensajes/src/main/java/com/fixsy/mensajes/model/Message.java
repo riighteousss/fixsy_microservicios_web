@@ -17,10 +17,11 @@ public class Message {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "ticket_id", nullable = false)
-    private Long ticketId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ticket_id", nullable = false)
+    private Ticket ticket;
 
-    @Column(name = "sender_id", nullable = false)
+    @Column(name = "sender_id", nullable = true)
     private Long senderId;
 
     @Column(name = "sender_email", nullable = false)
@@ -50,4 +51,3 @@ public class Message {
         if (isRead == null) isRead = false;
     }
 }
-

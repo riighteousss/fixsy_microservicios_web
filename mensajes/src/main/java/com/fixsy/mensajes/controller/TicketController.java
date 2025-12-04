@@ -1,7 +1,7 @@
 package com.fixsy.mensajes.controller;
 
-import com.fixsy.mensajes.dto.TicketDTO;
-import com.fixsy.mensajes.dto.TicketRequestDTO;
+import com.fixsy.mensajes.dto.*;
+import com.fixsy.mensajes.service.MessageService;
 import com.fixsy.mensajes.service.TicketService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,6 +23,9 @@ public class TicketController {
     @Autowired
     private TicketService ticketService;
 
+    @Autowired
+    private MessageService messageService;
+
     @GetMapping
     @Operation(summary = "Obtener todos los tickets")
     public ResponseEntity<List<TicketDTO>> getAllTickets() {
@@ -31,7 +34,13 @@ public class TicketController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Obtener ticket por ID (incluye mensajes)")
-    public ResponseEntity<TicketDTO> getTicketById(@PathVariable Long id) {
+    public ResponseEntity<TicketDTO> getTicketById(
+            @PathVariable Long id,
+            @RequestParam(value = "userId", required = false) Long userId,
+            @RequestParam(value = "userEmail", required = false) String userEmail) {
+        if (userId != null || (userEmail != null && !userEmail.isBlank())) {
+            return ResponseEntity.ok(ticketService.getTicketByIdForUser(id, userId, userEmail));
+        }
         return ResponseEntity.ok(ticketService.getTicketById(id));
     }
 
@@ -89,9 +98,21 @@ public class TicketController {
     }
 
     @PostMapping
-    @Operation(summary = "Crear nuevo ticket")
+    @Operation(summary = "Crear nuevo ticket (usuario logueado)")
     public ResponseEntity<TicketDTO> createTicket(@Valid @RequestBody TicketRequestDTO request) {
         return new ResponseEntity<>(ticketService.createTicket(request), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/public")
+    @Operation(summary = "Crear ticket publico (invitado)")
+    public ResponseEntity<TicketDTO> createPublicTicket(@Valid @RequestBody PublicTicketRequestDTO request) {
+        return new ResponseEntity<>(ticketService.createPublicTicket(request), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Crear ticket para recuperacion de contrasena")
+    public ResponseEntity<TicketDTO> createPasswordRecoveryTicket(@Valid @RequestBody PasswordRecoveryRequestDTO request) {
+        return new ResponseEntity<>(ticketService.createPasswordRecoveryTicket(request), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}/estado")
@@ -117,6 +138,12 @@ public class TicketController {
             @RequestParam Long supportId,
             @RequestParam String supportName) {
         return ResponseEntity.ok(ticketService.assignTicket(id, supportId, supportName));
+    }
+
+    @PatchMapping("/{id}/close")
+    @Operation(summary = "Cerrar ticket")
+    public ResponseEntity<TicketDTO> closeTicket(@PathVariable Long id) {
+        return ResponseEntity.ok(ticketService.closeTicket(id));
     }
 
     @DeleteMapping("/{id}")
@@ -155,5 +182,11 @@ public class TicketController {
         response.put("unread", ticketService.countUnreadForSupport(supportId));
         return ResponseEntity.ok(response);
     }
-}
 
+    @PostMapping("/{id}/messages")
+    @Operation(summary = "Agregar mensaje a un ticket (alias)")
+    public ResponseEntity<MessageDTO> addMessageToTicket(@PathVariable Long id, @Valid @RequestBody MessageRequestDTO request) {
+        request.setTicketId(id);
+        return new ResponseEntity<>(messageService.sendMessage(request), HttpStatus.CREATED);
+    }
+}

@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -24,25 +25,22 @@ public class MessageService {
     private TicketRepository ticketRepository;
 
     public List<MessageDTO> getMessagesByTicketId(Long ticketId) {
-        return messageRepository.findByTicketIdOrderByCreatedAtAsc(ticketId).stream()
+        return messageRepository.findByTicket_IdOrderByCreatedAtAsc(ticketId).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
     @Transactional
     public MessageDTO sendMessage(MessageRequestDTO request) {
-        // Verificar que el ticket existe
         Ticket ticket = ticketRepository.findById(request.getTicketId())
                 .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
 
-        // Verificar que el ticket no está cerrado
         if ("Cerrado".equals(ticket.getEstado())) {
             throw new RuntimeException("No se puede enviar mensajes a un ticket cerrado");
         }
 
-        // Crear mensaje
         Message message = new Message();
-        message.setTicketId(request.getTicketId());
+        message.setTicket(ticket);
         message.setSenderId(request.getSenderId());
         message.setSenderEmail(request.getSenderEmail());
         message.setSenderName(request.getSenderName());
@@ -54,17 +52,15 @@ public class MessageService {
             message.setAdjuntos(String.join(",", request.getAdjuntos()));
         }
 
+        ticket.addMessage(message);
         Message saved = messageRepository.save(message);
 
-        // Actualizar timestamp del ticket
-        ticketRepository.save(ticket);
-
-        // Si es respuesta de soporte y el ticket está "Abierto", cambiar a "En Proceso"
+        ticket.setUpdatedAt(LocalDateTime.now());
         if (("Soporte".equals(request.getSenderRole()) || "Admin".equals(request.getSenderRole()))
-            && "Abierto".equals(ticket.getEstado())) {
+                && "Abierto".equals(ticket.getEstado())) {
             ticket.setEstado("En Proceso");
-            ticketRepository.save(ticket);
         }
+        ticketRepository.save(ticket);
 
         return convertToDTO(saved);
     }
@@ -85,7 +81,7 @@ public class MessageService {
     private MessageDTO convertToDTO(Message message) {
         MessageDTO dto = new MessageDTO();
         dto.setId(message.getId());
-        dto.setTicketId(message.getTicketId());
+        dto.setTicketId(message.getTicket() != null ? message.getTicket().getId() : null);
         dto.setSenderId(message.getSenderId());
         dto.setSenderEmail(message.getSenderEmail());
         dto.setSenderName(message.getSenderName());
@@ -103,4 +99,3 @@ public class MessageService {
         return dto;
     }
 }
-

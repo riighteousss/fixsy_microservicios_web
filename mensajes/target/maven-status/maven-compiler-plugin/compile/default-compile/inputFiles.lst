@@ -1,0 +1,15 @@
+C:\Users\sahnb\OneDrive\Escritorio\Nueva carpeta\fixsy_microservicios_web-main\mensajes\src\main\java\com\fixsy\mensajes\config\SwaggerConfig.java
+C:\Users\sahnb\OneDrive\Escritorio\Nueva carpeta\fixsy_microservicios_web-main\mensajes\src\main\java\com\fixsy\mensajes\controller\MessageController.java
+C:\Users\sahnb\OneDrive\Escritorio\Nueva carpeta\fixsy_microservicios_web-main\mensajes\src\main\java\com\fixsy\mensajes\controller\TicketController.java
+C:\Users\sahnb\OneDrive\Escritorio\Nueva carpeta\fixsy_microservicios_web-main\mensajes\src\main\java\com\fixsy\mensajes\dto\MessageDTO.java
+C:\Users\sahnb\OneDrive\Escritorio\Nueva carpeta\fixsy_microservicios_web-main\mensajes\src\main\java\com\fixsy\mensajes\dto\MessageRequestDTO.java
+C:\Users\sahnb\OneDrive\Escritorio\Nueva carpeta\fixsy_microservicios_web-main\mensajes\src\main\java\com\fixsy\mensajes\dto\TicketDTO.java
+C:\Users\sahnb\OneDrive\Escritorio\Nueva carpeta\fixsy_microservicios_web-main\mensajes\src\main\java\com\fixsy\mensajes\dto\TicketRequestDTO.java
+C:\Users\sahnb\OneDrive\Escritorio\Nueva carpeta\fixsy_microservicios_web-main\mensajes\src\main\java\com\fixsy\mensajes\exception\GlobalExceptionHandler.java
+C:\Users\sahnb\OneDrive\Escritorio\Nueva carpeta\fixsy_microservicios_web-main\mensajes\src\main\java\com\fixsy\mensajes\MensajesApplication.java
+C:\Users\sahnb\OneDrive\Escritorio\Nueva carpeta\fixsy_microservicios_web-main\mensajes\src\main\java\com\fixsy\mensajes\model\Message.java
+C:\Users\sahnb\OneDrive\Escritorio\Nueva carpeta\fixsy_microservicios_web-main\mensajes\src\main\java\com\fixsy\mensajes\model\Ticket.java
+C:\Users\sahnb\OneDrive\Escritorio\Nueva carpeta\fixsy_microservicios_web-main\mensajes\src\main\java\com\fixsy\mensajes\repository\MessageRepository.java
+C:\Users\sahnb\OneDrive\Escritorio\Nueva carpeta\fixsy_microservicios_web-main\mensajes\src\main\java\com\fixsy\mensajes\repository\TicketRepository.java
+C:\Users\sahnb\OneDrive\Escritorio\Nueva carpeta\fixsy_microservicios_web-main\mensajes\src\main\java\com\fixsy\mensajes\service\MessageService.java
+C:\Users\sahnb\OneDrive\Escritorio\Nueva carpeta\fixsy_microservicios_web-main\mensajes\src\main\java\com\fixsy\mensajes\service\TicketService.java

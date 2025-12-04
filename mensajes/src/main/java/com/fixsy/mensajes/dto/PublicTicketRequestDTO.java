@@ -9,34 +9,29 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "DTO para crear un ticket de soporte")
-public class TicketRequestDTO {
-    @Schema(description = "ID del usuario (opcional para invitado)", example = "1")
-    private Long userId;
-
+@Schema(description = "DTO para crear un ticket público (invitado)")
+public class PublicTicketRequestDTO {
     @NotBlank(message = "El email es obligatorio")
     @Schema(description = "Email del usuario", example = "cliente@email.com", requiredMode = Schema.RequiredMode.REQUIRED)
     private String userEmail;
 
-    @Schema(description = "Nombre del usuario", example = "Juan Perez")
+    @NotBlank(message = "El nombre es obligatorio")
+    @Schema(description = "Nombre del usuario", example = "Invitado")
     private String userName;
 
     @NotBlank(message = "El asunto es obligatorio")
-    @Schema(description = "Asunto del ticket", example = "Problema con mi pedido", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "Asunto del ticket", example = "Consulta desde formulario", requiredMode = Schema.RequiredMode.REQUIRED)
     private String asunto;
 
-    @Schema(description = "Categoria del ticket", example = "Reclamo",
-            allowableValues = {"Consulta", "Reclamo", "Devolucion", "Problema Tecnico", "Otro", "Recuperacion de contrasena"})
+    @Schema(description = "Categoria del ticket", example = "Consulta",
+            allowableValues = {"Consulta", "Reclamo", "Devolucion", "Problema Tecnico", "Otro"})
     private String categoria = "Consulta";
 
     @Schema(description = "Prioridad del ticket", example = "Media",
             allowableValues = {"Baja", "Media", "Alta", "Urgente"})
     private String prioridad = "Media";
 
-    @Schema(description = "ID de la orden relacionada (opcional)", example = "123")
-    private Long orderId;
-
+    @Schema(description = "Mensaje inicial del ticket", example = "Necesito ayuda con mi compra", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "El mensaje inicial es obligatorio")
-    @Schema(description = "Mensaje inicial del ticket", example = "Hola, tengo un problema con mi pedido...", requiredMode = Schema.RequiredMode.REQUIRED)
     private String mensajeInicial;
 }

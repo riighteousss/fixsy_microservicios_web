@@ -16,7 +16,7 @@ public class Role {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String nombre; // Usuario, Admin, Soporte
+    private String nombre; // Usuario, Admin, Cliente
 
     @Column
     private String descripcion;

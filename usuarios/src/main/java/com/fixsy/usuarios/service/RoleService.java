@@ -20,19 +20,8 @@ public class RoleService {
      */
     @PostConstruct
     public void initializeRoles() {
-        // Administrador
         createIfMissing("Admin", "Administrador con acceso completo al sistema", "admin.fixsy.com");
-
-        // Soporte
-        createIfMissing("Soporte", "Personal de soporte al cliente", "soporte.fixsy.com");
-
-        // Vendedor
-        createIfMissing("Vendedor", "Vendedor: puede ver productos y ordenes", "vendedor.fixsy.com");
-
-        // Cliente (rol por defecto para la tienda)
         createIfMissing("Cliente", "Cliente final de la tienda", null);
-
-        // Rol Usuario previo (compatibilidad)
         createIfMissing("Usuario", "Cliente normal de la tienda (compatibilidad)", null);
     }
 
@@ -73,8 +62,6 @@ public class RoleService {
     /**
      * Determina el rol basándose en el dominio del email.
      * - @admin.fixsy.com -> Admin
-     * - @soporte.fixsy.com -> Soporte
-     * - @vendedor.fixsy.com -> Vendedor
      * - Default -> Cliente (o Usuario como compatibilidad)
      */
     public Role determineRoleByEmail(String email) {

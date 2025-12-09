@@ -40,7 +40,7 @@ public class UserController {
 
     @GetMapping
     @Operation(summary = "Obtener todos los usuarios con su rol (incluye roleId y objeto role)")
-    @PreAuthorize("hasAnyRole('Admin','Soporte')")
+    @PreAuthorize("hasRole('Admin')")
     public ResponseEntity<List<UserDTO>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
@@ -172,7 +172,7 @@ public class UserController {
 
     @PutMapping("/{id}/status")
     @Operation(summary = "Actualizar estado del usuario (Activo/Bloqueado/Suspendido)")
-    @PreAuthorize("hasAnyRole('Admin','Soporte')")
+    @PreAuthorize("hasRole('Admin')")
     public ResponseEntity<UserDTO> updateUserStatus(
             @PathVariable Long id,
             @RequestParam String status,

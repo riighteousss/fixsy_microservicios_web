@@ -13,7 +13,7 @@ public class RoleDTO {
     @Schema(description = "ID del rol", example = "1")
     private Long id;
     
-    @Schema(description = "Nombre del rol", example = "Usuario", allowableValues = {"Usuario", "Admin", "Soporte"})
+    @Schema(description = "Nombre del rol", example = "Usuario", allowableValues = {"Usuario", "Admin", "Cliente"})
     private String nombre;
     
     @Schema(description = "Descripción del rol", example = "Cliente normal de la tienda")

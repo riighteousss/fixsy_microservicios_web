@@ -38,13 +38,9 @@ public class UsuariosDataLoader implements CommandLineRunner {
         Role usuarioRole = roleRepository.findByNombre("Usuario").orElse(null);
         Role clienteRole = roleRepository.findByNombre("Cliente").orElse(usuarioRole);
         Role adminRole = roleRepository.findByNombre("Admin").orElse(null);
-        Role soporteRole = roleRepository.findByNombre("Soporte").orElse(null);
-        Role vendedorRole = roleRepository.findByNombre("Vendedor").orElse(null);
 
         createUserIfMissing("cliente@cliente.fixsy.com", "Cliente123", "Carla", "Cliente", "+56911112222", clienteRole);
         createUserIfMissing("admin@admin.fixsy.com", "Admin123", "Ana", "Admin", "+56922223333", adminRole);
-        createUserIfMissing("soporte@soporte.fixsy.com", "Soporte123", "Sofia", "Soporte", "+56933334444", soporteRole);
-        createUserIfMissing("vendedor@vendedor.fixsy.com", "Vendedor123", "Victor", "Vendedor", "+56944445555", vendedorRole);
         createUserIfMissing("usuario@fixsy.com", "Usuario123", "Ursula", "Usuario", "+56955556666", usuarioRole);
     }
 

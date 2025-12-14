@@ -371,6 +371,10 @@ public class ProductService {
             entity.setIsActive(request.getIsActive());
         }
 
+        if (request.getImageUrl() != null && !request.getImageUrl().isBlank()) {
+            entity.setImageUrl(request.getImageUrl());
+        }
+
         entity.setDiscountPercentage(request.getDiscountPercentage() == null ? 0 : request.getDiscountPercentage());
     }
 

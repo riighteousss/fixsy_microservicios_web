@@ -25,8 +25,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
         String token = null;
         String username = null;
@@ -39,7 +39,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     username = provider.getUsernameFromToken(token);
                 }
             } catch (Exception ignored) {
-                // Token invalido o expirado; se deja continuar sin autenticacion
             }
         }
 

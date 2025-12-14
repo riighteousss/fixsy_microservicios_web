@@ -60,16 +60,28 @@ public class RoleService {
     }
 
     /**
-     * Determina el rol basándose en el dominio del email.
-     * - @admin.fixsy.com -> Admin
-     * - Default -> Cliente (o Usuario como compatibilidad)
+     * Determina el rol basándose en el dominio del email con validación estricta.
+     * - @adminfixsy.cl -> Admin
+     * - @fixsy.cl -> Soporte
+     * - Cualquier otro -> Usuario
      */
     public Role determineRoleByEmail(String email) {
-        String domain = email.toLowerCase().split("@")[1];
+        if (email == null)
+            return getRoleEntityByNombre("Usuario");
 
-        return roleRepository.findByEmailDomain(domain)
-                .orElseGet(() -> roleRepository.findByNombre("Cliente")
-                        .orElseGet(() -> getRoleEntityByNombre("Usuario")));
+        String lowerEmail = email.toLowerCase().trim();
+
+        if (lowerEmail.endsWith("@adminfixsy.cl")) {
+            return roleRepository.findByNombre("Admin")
+                    .orElseThrow(() -> new RuntimeException("Rol Admin no encontrado"));
+        }
+
+        if (lowerEmail.endsWith("@fixsy.cl")) {
+            return roleRepository.findByNombre("Soporte")
+                    .orElseThrow(() -> new RuntimeException("Rol Soporte no encontrado"));
+        }
+
+        return getRoleEntityByNombre("Usuario");
     }
 
     public RoleDTO convertToDTO(Role role) {
@@ -77,7 +89,7 @@ public class RoleService {
                 role.getId(),
                 role.getNombre(),
                 role.getDescripcion(),
-                role.getEmailDomain()
-        );
+                role.getEmailDomain());
     }
+
 }

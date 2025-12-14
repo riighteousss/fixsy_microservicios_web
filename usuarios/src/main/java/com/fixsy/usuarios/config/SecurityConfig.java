@@ -39,8 +39,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/users/**").permitAll()
                         // Permitir OPTIONS para CORS pre-flight requests
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

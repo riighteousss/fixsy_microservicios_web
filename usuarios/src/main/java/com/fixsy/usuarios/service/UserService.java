@@ -90,9 +90,9 @@ public class UserService {
 
         if ("Suspendido".equals(user.getStatus())) {
             if (user.getSuspensionHasta() != null &&
-                user.getSuspensionHasta().isAfter(LocalDateTime.now())) {
+                    user.getSuspensionHasta().isAfter(LocalDateTime.now())) {
                 return new LoginResponseDTO(false,
-                    "Usuario suspendido hasta " + user.getSuspensionHasta(), null, null);
+                        "Usuario suspendido hasta " + user.getSuspensionHasta(), null, null);
             } else {
                 user.setStatus("Activo");
                 user.setSuspensionHasta(null);
@@ -105,10 +105,7 @@ public class UserService {
                         user.getEmail(),
                         user.getPassword(),
                         List.of(new SimpleGrantedAuthority(
-                                "ROLE_" + (user.getRole() != null ? user.getRole().getNombre() : "Usuario")
-                        ))
-                )
-        );
+                                "ROLE_" + (user.getRole() != null ? user.getRole().getNombre() : "Usuario")))));
 
         return new LoginResponseDTO(true, "Login exitoso", convertToDTO(user), token);
     }
@@ -145,7 +142,7 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         if (!user.getEmail().equalsIgnoreCase(userRequest.getEmail()) &&
-            userRepository.existsByEmail(userRequest.getEmail())) {
+                userRepository.existsByEmail(userRequest.getEmail())) {
             throw new RuntimeException("El email ya esta en uso por otro usuario");
         }
 
@@ -163,7 +160,7 @@ public class UserService {
         user.setPhone(normalizePhone(userRequest.getPhone()));
 
         if (userRequest.getPassword() != null && !userRequest.getPassword().isEmpty() &&
-            userRequest.getPassword().length() >= 8) {
+                userRequest.getPassword().length() >= 8) {
             user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
         }
 
@@ -233,8 +230,7 @@ public class UserService {
             roleSummary = new RoleSummaryDTO(
                     role.getId(),
                     role.getNombre(),
-                    role.getDescripcion()
-            );
+                    role.getDescripcion());
         }
 
         return new UserDTO(
@@ -248,7 +244,6 @@ public class UserService {
                 user.getStatus(),
                 user.getProfilePic(),
                 user.getSuspensionHasta(),
-                user.getCreatedAt()
-        );
+                user.getCreatedAt());
     }
 }

@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
-@RequestMapping({"/api/v1/users", "/api/users"})
+@RequestMapping({ "/api/v1/users", "/api/users" })
 @CrossOrigin(origins = "*")
 @Tag(name = "User Controller", description = "API para gestion de usuarios de Fixsy Parts")
 public class UserController {
@@ -40,7 +40,7 @@ public class UserController {
 
     @GetMapping
     @Operation(summary = "Obtener todos los usuarios con su rol (incluye roleId y objeto role)")
-    @PreAuthorize("hasRole('Admin')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserDTO>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
@@ -54,9 +54,7 @@ public class UserController {
     @GetMapping("/email/{email}")
     @Operation(summary = "Obtener usuario por email")
     public ResponseEntity<UserDTO> getUserByEmail(
-            @PathVariable
-            @io.swagger.v3.oas.annotations.Parameter(description = "Email del usuario", example = "usuario@example.com")
-            String email) {
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "Email del usuario", example = "usuario@example.com") String email) {
         try {
             String decodedEmail = java.net.URLDecoder.decode(email, java.nio.charset.StandardCharsets.UTF_8);
             return ResponseEntity.ok(userService.getUserByEmail(decodedEmail));
@@ -68,18 +66,14 @@ public class UserController {
     @GetMapping("/role/{roleName}")
     @Operation(summary = "Obtener usuarios por nombre de rol")
     public ResponseEntity<List<UserDTO>> getUsersByRole(
-            @PathVariable
-            @io.swagger.v3.oas.annotations.Parameter(description = "Nombre del rol", example = "Usuario")
-            String roleName) {
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "Nombre del rol", example = "Usuario") String roleName) {
         return ResponseEntity.ok(userService.getUsersByRole(roleName));
     }
 
     @GetMapping("/status/{status}")
     @Operation(summary = "Obtener usuarios por estado")
     public ResponseEntity<List<UserDTO>> getUsersByStatus(
-            @PathVariable
-            @io.swagger.v3.oas.annotations.Parameter(description = "Estado del usuario", example = "Activo")
-            String status) {
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "Estado del usuario", example = "Activo") String status) {
         return ResponseEntity.ok(userService.getUsersByStatus(status));
     }
 
@@ -125,7 +119,7 @@ public class UserController {
 
     @PostMapping
     @Operation(summary = "Crear nuevo usuario (Admin puede especificar rol)")
-    @PreAuthorize("hasRole('Admin')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDTO> createUser(@RequestBody UserRequestDTO userRequest) {
         if (userRequest.getEmail() == null || userRequest.getEmail().isBlank()) {
             throw new RuntimeException("El email es obligatorio");
@@ -172,7 +166,7 @@ public class UserController {
 
     @PutMapping("/{id}/status")
     @Operation(summary = "Actualizar estado del usuario (Activo/Bloqueado/Suspendido)")
-    @PreAuthorize("hasRole('Admin')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDTO> updateUserStatus(
             @PathVariable Long id,
             @RequestParam String status,
@@ -182,7 +176,7 @@ public class UserController {
 
     @PutMapping("/{id}/role")
     @Operation(summary = "Actualizar rol del usuario (Solo Admin)")
-    @PreAuthorize("hasRole('Admin')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDTO> updateUserRole(
             @PathVariable Long id,
             @RequestParam Long roleId) {
@@ -191,7 +185,7 @@ public class UserController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar usuario")
-    @PreAuthorize("hasRole('Admin')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();

@@ -51,6 +51,9 @@ public class ProductRequestDTO {
     @Schema(description = "Producto activo/visible", example = "true")
     private Boolean isActive = true;
 
+    @Schema(description = "URL de la imagen principal", example = "https://images.unsplash.com/photo-...")
+    private String imageUrl;
+
     // Métodos de compatibilidad con naming previo (nombre/precioNormal/precioOferta)
     public String getNombre() { return name; }
     public void setNombre(String nombre) { this.name = nombre; }

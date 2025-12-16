@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -95,8 +94,13 @@ public class OrderService {
             if (item.getQuantity() == null || item.getQuantity() <= 0) {
                 throw new IllegalArgumentException("La cantidad del item debe ser mayor a 0");
             }
+            // Fallback: si no viene SKU pero sí productId, generar uno automático
             if (item.getProductSku() == null || item.getProductSku().isBlank()) {
-                throw new IllegalArgumentException("El SKU del producto es obligatorio");
+                if (item.getProductId() != null) {
+                    item.setProductSku("PROD-" + item.getProductId());
+                } else {
+                    throw new IllegalArgumentException("El SKU del producto es obligatorio");
+                }
             }
 
             BigDecimal original = item.getPrecio() != null ? item.getPrecio() : item.getUnitPrice();
@@ -148,7 +152,7 @@ public class OrderService {
         order.setPaymentMethod(request.getPaymentMethod());
         order.setNotes(request.getNotes());
 
-        List<OrderItem> items = new ArrayList<>();
+        // Crear items y asociarlos a la orden usando addItem() para relación bidireccional
         for (OrderItemRequestDTO itemRequest : request.getItems()) {
             BigDecimal original = itemRequest.getPrecio() != null ? itemRequest.getPrecio() : itemRequest.getUnitPrice();
             BigDecimal effective = itemRequest.getPrecioOferta() != null && itemRequest.getPrecioOferta().compareTo(BigDecimal.ZERO) > 0
@@ -174,16 +178,13 @@ public class OrderService {
             item.setUnitPrice(effective);
             item.setDiscountUnitAmount(discount);
             item.setSubtotal(effective.multiply(BigDecimal.valueOf(itemRequest.getQuantity())));
-            items.add(item);
+            
+            // Usar addItem() que establece la relación bidireccional (item.setOrder(this))
+            order.addItem(item);
         }
-        order.setItems(items);
 
+        // Guardar orden - cascade persiste los items automáticamente
         Order savedOrder = orderRepository.save(order);
-        for (OrderItem item : items) {
-            item.setOrder(savedOrder);
-            orderItemRepository.save(item);
-        }
-        savedOrder.setItems(items);
         return convertToDTO(savedOrder);
     }
 

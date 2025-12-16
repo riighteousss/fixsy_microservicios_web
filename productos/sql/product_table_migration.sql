@@ -41,3 +41,19 @@ CREATE TABLE IF NOT EXISTS products (
 -- ALTER TABLE products ADD COLUMN updated_at DATETIME NULL AFTER created_at;
 
 -- Las columnas tags e images se guardan como texto separado por comas para mantener el modelo simple.
+
+-- =====================================
+-- MIGRACION: Rellenar SKU faltantes
+-- =====================================
+-- Ejecutar si hay productos con SKU nulo o vacio:
+
+-- Primero verificar productos sin SKU:
+-- SELECT id, nombre, sku FROM products WHERE sku IS NULL OR sku = '';
+
+-- Rellenar SKUs faltantes con formato FIXSY-{ID}:
+UPDATE products 
+SET sku = CONCAT('FIXSY-', id) 
+WHERE sku IS NULL OR sku = '';
+
+-- Verificar el resultado:
+-- SELECT id, nombre, sku FROM products;

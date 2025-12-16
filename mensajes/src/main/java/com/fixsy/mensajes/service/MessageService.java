@@ -25,7 +25,17 @@ public class MessageService {
     private TicketRepository ticketRepository;
 
     public List<MessageDTO> getMessagesByTicketId(Long ticketId) {
-        return messageRepository.findByTicket_IdOrderByCreatedAtAsc(ticketId).stream()
+        return getMessagesByTicketId(ticketId, "Usuario");
+    }
+
+    public List<MessageDTO> getMessagesByTicketId(Long ticketId, String viewerRole) {
+        List<Message> messages;
+        if ("Usuario".equalsIgnoreCase(viewerRole)) {
+            messages = messageRepository.findByTicket_IdAndInternalFalseOrderByCreatedAtAsc(ticketId);
+        } else {
+            messages = messageRepository.findByTicket_IdOrderByCreatedAtAsc(ticketId);
+        }
+        return messages.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -51,6 +61,15 @@ public class MessageService {
         if (request.getAdjuntos() != null && !request.getAdjuntos().isEmpty()) {
             message.setAdjuntos(String.join(",", request.getAdjuntos()));
         }
+
+        boolean wantsInternal = request.getInternal() != null && request.getInternal();
+        if (wantsInternal) {
+            String role = request.getSenderRole();
+            if (role == null || (!role.equalsIgnoreCase("Soporte") && !role.equalsIgnoreCase("Admin"))) {
+                throw new RuntimeException("Solo Soporte o Admin pueden enviar mensajes internos");
+            }
+        }
+        message.setInternal(wantsInternal);
 
         ticket.addMessage(message);
         Message saved = messageRepository.save(message);
@@ -96,6 +115,7 @@ public class MessageService {
             dto.setAdjuntos(Collections.emptyList());
         }
 
+        dto.setInternal(message.getInternal());
         return dto;
     }
 }

@@ -37,4 +37,7 @@ public class MessageRequestDTO {
 
     @Schema(description = "URLs de archivos adjuntos")
     private List<String> adjuntos;
+
+    @Schema(description = "Indica si el mensaje es interno (solo soporte/admin puede usarlo)", example = "false")
+    private Boolean internal;
 }

@@ -17,7 +17,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/tickets")
-@CrossOrigin(origins = "*")
 @Tag(name = "Ticket Controller", description = "API para gestión de tickets de soporte")
 public class TicketController {
     @Autowired
@@ -104,7 +103,7 @@ public class TicketController {
     }
 
     @PostMapping("/public")
-    @Operation(summary = "Crear ticket publico (invitado)")
+    @Operation(summary = "Crear ticket de boleta publico (invitado)")
     public ResponseEntity<TicketDTO> createPublicTicket(@Valid @RequestBody PublicTicketRequestDTO request) {
         return new ResponseEntity<>(ticketService.createPublicTicket(request), HttpStatus.CREATED);
     }

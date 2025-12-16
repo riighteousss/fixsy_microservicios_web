@@ -19,7 +19,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/orders")
-@CrossOrigin(origins = "*") // Para desarrollo web - En producción especificar dominios
 @Tag(name = "Order Controller", description = "API para gestión de órdenes de compra de Fixsy Parts")
 public class OrderController {
     @Autowired
@@ -76,6 +75,12 @@ public class OrderController {
     @Operation(summary = "Crear nueva orden")
     public ResponseEntity<OrderDTO> createOrder(@Valid @RequestBody OrderRequestDTO orderRequest) {
         return new ResponseEntity<>(orderService.createOrder(orderRequest), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/public")
+    @Operation(summary = "Crear orden pública sin userId (invitado)")
+    public ResponseEntity<OrderDTO> createPublicOrder(@Valid @RequestBody OrderRequestDTO orderRequest) {
+        return new ResponseEntity<>(orderService.createPublicOrder(orderRequest), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}/status")

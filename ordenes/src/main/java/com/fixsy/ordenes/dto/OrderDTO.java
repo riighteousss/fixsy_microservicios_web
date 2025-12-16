@@ -36,6 +36,9 @@ public class OrderDTO {
     @Schema(description = "Costo de envío", example = "3990")
     private BigDecimal shippingCost;
     
+    @Schema(description = "IVA aplicado a los productos", example = "5698")
+    private BigDecimal iva;
+    
     @Schema(description = "Total de la orden", example = "33980")
     private BigDecimal total;
     
@@ -78,4 +81,3 @@ public class OrderDTO {
     @Schema(description = "Fecha de entrega")
     private LocalDateTime deliveredAt;
 }
-

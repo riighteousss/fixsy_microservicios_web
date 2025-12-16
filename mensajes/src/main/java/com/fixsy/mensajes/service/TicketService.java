@@ -100,15 +100,24 @@ public class TicketService {
 
     @Transactional
     public TicketDTO createPublicTicket(PublicTicketRequestDTO request) {
+        if (request.getOrderId() == null || request.getOrderId() <= 0) {
+            throw new IllegalArgumentException("El orderId es obligatorio para solicitar boleta");
+        }
+        String asunto = "Boleta de compra #" + request.getOrderId();
+        String mensaje = "Solicito boleta de la orden #" + request.getOrderId();
+        if (request.getNote() != null && !request.getNote().isBlank()) {
+            mensaje += " - " + request.getNote().trim();
+        }
+
         return createTicketInternal(
                 null,
                 request.getUserEmail(),
                 request.getUserName(),
-                request.getAsunto(),
-                request.getCategoria(),
+                asunto,
+                "Boleta",
                 request.getPrioridad(),
-                null,
-                request.getMensajeInicial(),
+                request.getOrderId(),
+                mensaje,
                 "Usuario"
         );
     }
@@ -272,6 +281,7 @@ public class TicketService {
         } else {
             dto.setAdjuntos(Collections.emptyList());
         }
+        dto.setInternal(message.getInternal());
         
         return dto;
     }

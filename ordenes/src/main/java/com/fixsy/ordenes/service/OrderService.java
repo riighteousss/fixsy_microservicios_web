@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +27,13 @@ public class OrderService {
 
     @Autowired
     private OrderItemRepository orderItemRepository;
+
+    private static final BigDecimal IVA_RATE = new BigDecimal("0.19");
+
+    public OrderDTO createPublicOrder(OrderRequestDTO request) {
+        request.setUserId(0L);
+        return createOrder(request);
+    }
 
     public List<OrderDTO> getAllOrders() {
         return orderRepository.findAll().stream()
@@ -75,6 +83,13 @@ public class OrderService {
             throw new IllegalArgumentException("La orden debe tener al menos un item");
         }
 
+        if (request.getUserEmail() == null || request.getUserEmail().isBlank()) {
+            throw new IllegalArgumentException("El email del comprador es obligatorio");
+        }
+        if (request.getUserName() == null || request.getUserName().isBlank()) {
+            throw new IllegalArgumentException("El nombre del comprador es obligatorio");
+        }
+
         BigDecimal subtotal = BigDecimal.ZERO;
         for (OrderItemRequestDTO item : request.getItems()) {
             if (item.getQuantity() == null || item.getQuantity() <= 0) {
@@ -106,12 +121,20 @@ public class OrderService {
 
         BigDecimal shippingCost = request.getShippingCost() != null
                 ? request.getShippingCost()
-                : calculateShippingCost(request.getShippingRegion());
+                : calculateShippingCost(request.getShippingRegion(), request.getShippingAddress());
 
-        BigDecimal total = subtotal.add(shippingCost);
+        BigDecimal ivaAmount = calculateIva(subtotal);
+        BigDecimal total = subtotal.add(shippingCost).add(ivaAmount);
 
         Order order = new Order();
-        order.setUserId(request.getUserId());
+        Long resolvedUserId = request.getUserId();
+        if (resolvedUserId == null || resolvedUserId <= 0) {
+            resolvedUserId = 0L;
+            if (request.getPaymentMethod() == null || request.getPaymentMethod().isBlank()) {
+                throw new IllegalArgumentException("El metodo de pago es obligatorio para invitados");
+            }
+        }
+        order.setUserId(resolvedUserId);
         order.setUserEmail(request.getUserEmail());
         order.setUserName(request.getUserName());
         order.setStatus("Pendiente");
@@ -260,12 +283,24 @@ public class OrderService {
         }
     }
 
-    private BigDecimal calculateShippingCost(String region) {
-        if (region == null) {
-            return new BigDecimal("5990");
+    private BigDecimal calculateShippingCost(String region, String address) {
+        if (region != null && !region.isBlank()) {
+            return shippingCostForRegion(region);
         }
+        if (address != null && !address.isBlank()) {
+            String normalized = address.toLowerCase();
+            if (normalized.contains("metropolitana")) {
+                return new BigDecimal("3990");
+            }
+            if (normalized.contains("valparaiso") || normalized.contains("o'higgins")) {
+                return new BigDecimal("4990");
+            }
+        }
+        return new BigDecimal("5990");
+    }
 
-        switch (region.toLowerCase()) {
+    private BigDecimal shippingCostForRegion(String region) {
+        switch (region.trim().toLowerCase()) {
             case "metropolitana":
                 return new BigDecimal("3990");
             case "valparaiso":
@@ -285,6 +320,7 @@ public class OrderService {
         dto.setStatus(order.getStatus());
         dto.setSubtotal(order.getSubtotal());
         dto.setShippingCost(order.getShippingCost());
+        dto.setIva(calculateIva(order.getSubtotal()));
         dto.setTotal(order.getTotal());
         dto.setShippingAddress(order.getShippingAddress());
         dto.setShippingRegion(order.getShippingRegion());
@@ -317,5 +353,12 @@ public class OrderService {
                 item.getDiscountUnitAmount(),
                 item.getSubtotal()
         );
+    }
+
+    private BigDecimal calculateIva(BigDecimal amount) {
+        if (amount == null) {
+            return BigDecimal.ZERO;
+        }
+        return amount.multiply(IVA_RATE).setScale(2, RoundingMode.HALF_UP);
     }
 }

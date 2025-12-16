@@ -43,4 +43,6 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     
     // Último mensaje de un ticket
     Message findFirstByTicket_IdOrderByCreatedAtDesc(Long ticketId);
+
+    List<Message> findByTicket_IdAndInternalFalseOrderByCreatedAtAsc(Long ticketId);
 }

@@ -43,5 +43,7 @@ public class MessageDTO {
 
     @Schema(description = "Fecha de creación")
     private LocalDateTime createdAt;
-}
 
+    @Schema(description = "Indica si el mensaje es interno (solo Soporte/Admin)", example = "false")
+    private Boolean internal;
+}

@@ -3,7 +3,6 @@ package com.fixsy.ordenes.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,15 +15,15 @@ import java.util.List;
 @AllArgsConstructor
 @Schema(description = "DTO para crear una orden de compra")
 public class OrderRequestDTO {
-    @NotNull(message = "El ID de usuario es obligatorio")
-    @Schema(description = "ID del usuario comprador", example = "1", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "ID del usuario comprador (0 o null para invitados)", example = "1")
     private Long userId;
 
     @NotBlank(message = "El email es obligatorio")
     @Schema(description = "Email del usuario", example = "cliente@email.com", requiredMode = Schema.RequiredMode.REQUIRED)
     private String userEmail;
 
-    @Schema(description = "Nombre del comprador", example = "Juan Perez")
+    @NotBlank(message = "El nombre del comprador es obligatorio")
+    @Schema(description = "Nombre del comprador", example = "Juan Perez", requiredMode = Schema.RequiredMode.REQUIRED)
     private String userName;
 
     @NotEmpty(message = "La orden debe tener al menos un item")

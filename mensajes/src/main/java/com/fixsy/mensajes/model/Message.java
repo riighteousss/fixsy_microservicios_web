@@ -42,6 +42,9 @@ public class Message {
     @Column(name = "is_read")
     private Boolean isRead = false;
 
+    @Column(name = "is_internal")
+    private Boolean internal = false;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -49,5 +52,6 @@ public class Message {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         if (isRead == null) isRead = false;
+        if (internal == null) internal = false;
     }
 }

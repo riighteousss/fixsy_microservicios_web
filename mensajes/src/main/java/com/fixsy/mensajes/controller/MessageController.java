@@ -17,7 +17,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/messages")
-@CrossOrigin(origins = "*")
 @Tag(name = "Message Controller", description = "API para gestión de mensajes en tickets")
 public class MessageController {
     @Autowired
@@ -25,8 +24,10 @@ public class MessageController {
 
     @GetMapping("/ticket/{ticketId}")
     @Operation(summary = "Obtener mensajes de un ticket")
-    public ResponseEntity<List<MessageDTO>> getMessagesByTicketId(@PathVariable Long ticketId) {
-        return ResponseEntity.ok(messageService.getMessagesByTicketId(ticketId));
+    public ResponseEntity<List<MessageDTO>> getMessagesByTicketId(
+            @PathVariable Long ticketId,
+            @RequestParam(value = "viewerRole", required = false, defaultValue = "Usuario") String viewerRole) {
+        return ResponseEntity.ok(messageService.getMessagesByTicketId(ticketId, viewerRole));
     }
 
     @PostMapping
@@ -65,4 +66,3 @@ public class MessageController {
         return ResponseEntity.ok(response);
     }
 }
-

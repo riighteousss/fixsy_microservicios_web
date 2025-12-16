@@ -5,12 +5,11 @@ import com.fixsy.usuarios.dto.LoginResponseDTO;
 import com.fixsy.usuarios.dto.RoleSummaryDTO;
 import com.fixsy.usuarios.dto.UserDTO;
 import com.fixsy.usuarios.dto.UserRequestDTO;
+import com.fixsy.usuarios.dto.RegisterDTO;
 import com.fixsy.usuarios.model.Role;
 import com.fixsy.usuarios.model.User;
 import com.fixsy.usuarios.repository.UserRepository;
-import com.fixsy.usuarios.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -28,9 +27,6 @@ public class UserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private JwtTokenProvider jwtTokenProvider;
 
     public List<UserDTO> getAllUsers() {
         return userRepository.findAll().stream()
@@ -62,52 +58,63 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-    public LoginResponseDTO login(LoginRequestDTO loginRequest) {
-        User user = userRepository.findByEmail(loginRequest.getEmail()).orElse(null);
+    public User loginDirect(String email, String password) {
+        if (email == null || password == null)
+            throw new RuntimeException("Email y password son requeridos");
+        User user = userRepository.findByEmail(email.toLowerCase().trim())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        if (user == null) {
-            return new LoginResponseDTO(false, "Usuario no encontrado", null, null);
-        }
-
-        boolean passwordMatches = user.getPassword() != null &&
-                (user.getPassword().startsWith("$2")
-                        ? passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())
-                        : user.getPassword().equals(loginRequest.getPassword()));
-
-        if (!passwordMatches) {
-            return new LoginResponseDTO(false, "Contrasena incorrecta", null, null);
-        }
-
-        // Si estaba en texto plano, re-encodear para las siguientes veces
-        if (!user.getPassword().startsWith("$2")) {
-            user.setPassword(passwordEncoder.encode(loginRequest.getPassword()));
-            userRepository.save(user);
-        }
-
-        if ("Bloqueado".equals(user.getStatus())) {
-            return new LoginResponseDTO(false, "Usuario bloqueado", null, null);
-        }
-
-        if ("Suspendido".equals(user.getStatus())) {
-            if (user.getSuspensionHasta() != null &&
-                    user.getSuspensionHasta().isAfter(LocalDateTime.now())) {
-                return new LoginResponseDTO(false,
-                        "Usuario suspendido hasta " + user.getSuspensionHasta(), null, null);
-            } else {
-                user.setStatus("Activo");
-                user.setSuspensionHasta(null);
+        // Soporta tanto bcrypt como texto plano (para legado/desarrollo)
+        boolean matches = false;
+        if (user.getPassword() != null && user.getPassword().startsWith("$2")) {
+            matches = passwordEncoder.matches(password, user.getPassword());
+        } else {
+            matches = user.getPassword() != null && user.getPassword().equals(password);
+            // Actualizar a bcrypt si coincidió en texto plano
+            if (matches) {
+                user.setPassword(passwordEncoder.encode(password));
                 userRepository.save(user);
             }
         }
 
-        String token = jwtTokenProvider.generateToken(
-                new org.springframework.security.core.userdetails.User(
-                        user.getEmail(),
-                        user.getPassword(),
-                        List.of(new SimpleGrantedAuthority(
-                                "ROLE_" + (user.getRole() != null ? user.getRole().getNombre() : "Usuario")))));
+        if (!matches) {
+            throw new RuntimeException("Contraseña incorrecta");
+        }
 
-        return new LoginResponseDTO(true, "Login exitoso", convertToDTO(user), token);
+        return user;
+    }
+
+    public User registerUserDirect(RegisterDTO dto) {
+        String email = dto.getEmail().toLowerCase().trim();
+
+        if (userRepository.existsByEmail(email)) {
+            throw new RuntimeException("El email ya está registrado");
+        }
+
+        // REGLA DE ASIGNACIÓN DE ROLES (Delegada a RoleService)
+        Role role = roleService.determineRoleByEmail(email);
+
+        User user = new User();
+        user.setEmail(email);
+        user.setNombre(dto.getNombres());
+        user.setApellido(dto.getApellidos());
+        user.setPhone(normalizePhone(dto.getTelefono()));
+        user.setPassword(passwordEncoder.encode(dto.getContrasena()));
+        user.setRole(role);
+        user.setStatus("Activo");
+
+        return userRepository.save(user);
+    }
+
+    // Login heredado obsoleto - manteniendo firma para evitar romper UserController
+    // pero no usado por AuthController
+    public LoginResponseDTO login(LoginRequestDTO loginRequest) {
+        try {
+            User user = loginDirect(loginRequest.getEmail(), loginRequest.getPassword());
+            return new LoginResponseDTO(true, "Login exitoso", convertToDTO(user), null);
+        } catch (Exception e) {
+            return new LoginResponseDTO(false, e.getMessage(), null, null);
+        }
     }
 
     public UserDTO createUser(UserRequestDTO userRequest) {
@@ -115,12 +122,8 @@ public class UserService {
             throw new RuntimeException("El email ya esta registrado");
         }
 
-        Role role;
-        if (userRequest.getRoleId() != null) {
-            role = roleService.getRoleEntityById(userRequest.getRoleId());
-        } else {
-            role = roleService.determineRoleByEmail(userRequest.getEmail());
-        }
+        Role role = roleService.determineRoleByEmail(userRequest.getEmail());
+        // SE FUERZA LA LOGICA DE DOMINIO - Se ignora roleId del body para seguridad
 
         User user = new User();
         user.setEmail(userRequest.getEmail());

@@ -3,7 +3,6 @@ package com.fixsy.usuarios.service;
 import com.fixsy.usuarios.dto.RoleDTO;
 import com.fixsy.usuarios.model.Role;
 import com.fixsy.usuarios.repository.RoleRepository;
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,22 +13,6 @@ import java.util.stream.Collectors;
 public class RoleService {
     @Autowired
     private RoleRepository roleRepository;
-
-    /**
-     * Inicializa roles base al arrancar la aplicación.
-     */
-    @PostConstruct
-    public void initializeRoles() {
-        createIfMissing("Admin", "Administrador con acceso completo al sistema", "admin.fixsy.com");
-        createIfMissing("Cliente", "Cliente final de la tienda", null);
-        createIfMissing("Usuario", "Cliente normal de la tienda (compatibilidad)", null);
-    }
-
-    private void createIfMissing(String nombre, String descripcion, String dominio) {
-        if (!roleRepository.existsByNombre(nombre)) {
-            roleRepository.save(new Role(nombre, descripcion, dominio));
-        }
-    }
 
     public List<RoleDTO> getAllRoles() {
         return roleRepository.findAll().stream()
@@ -62,26 +45,30 @@ public class RoleService {
     /**
      * Determina el rol basándose en el dominio del email con validación estricta.
      * - @adminfixsy.cl -> Admin
-     * - @fixsy.cl -> Soporte
+     * - @fixsy.cl / @fixsy.com -> Soporte
      * - Cualquier otro -> Usuario
      */
     public Role determineRoleByEmail(String email) {
-        if (email == null)
+        if (email == null) {
             return getRoleEntityByNombre("Usuario");
-
-        String lowerEmail = email.toLowerCase().trim();
-
-        if (lowerEmail.endsWith("@adminfixsy.cl")) {
-            return roleRepository.findByNombre("Admin")
-                    .orElseThrow(() -> new RuntimeException("Rol Admin no encontrado"));
         }
 
-        if (lowerEmail.endsWith("@fixsy.cl")) {
-            return roleRepository.findByNombre("Soporte")
-                    .orElseThrow(() -> new RuntimeException("Rol Soporte no encontrado"));
+        // 1. Sanitización
+        String emailSanitized = email.trim().toLowerCase();
+
+        // 2. Lógica Blindada
+        String finalRoleName;
+        if (emailSanitized.endsWith("@adminfixsy.cl")) {
+            finalRoleName = "Admin";
+        } else if (emailSanitized.endsWith("@fixsy.cl") || emailSanitized.endsWith("@fixsy.com")) {
+            finalRoleName = "Soporte";
+        } else {
+            finalRoleName = "Usuario";
         }
 
-        return getRoleEntityByNombre("Usuario");
+        // 3. Obtención de Entidad
+        return roleRepository.findByNombre(finalRoleName)
+                .orElseThrow(() -> new RuntimeException("Rol crítico no encontrado en BD: " + finalRoleName));
     }
 
     public RoleDTO convertToDTO(Role role) {

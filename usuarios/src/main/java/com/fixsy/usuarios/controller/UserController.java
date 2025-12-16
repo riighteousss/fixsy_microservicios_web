@@ -174,12 +174,16 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUserStatus(id, status, suspensionHasta));
     }
 
-    @PutMapping("/{id}/role")
+    @PatchMapping("/{id}/role")
     @Operation(summary = "Actualizar rol del usuario (Solo Admin)")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserDTO> updateUserRole(
+    public ResponseEntity<UserDTO> updateUserRolePatch(
             @PathVariable Long id,
-            @RequestParam Long roleId) {
+            @RequestBody java.util.Map<String, Long> payload) {
+        Long roleId = payload.get("roleId");
+        if (roleId == null) {
+            throw new RuntimeException("El roleId es obligatorio");
+        }
         return ResponseEntity.ok(userService.updateUserRole(id, roleId));
     }
 

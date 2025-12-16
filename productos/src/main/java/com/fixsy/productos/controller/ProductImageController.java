@@ -37,8 +37,6 @@ public class ProductImageController {
 
     private final ProductRepository productRepository;
     private final ProductImageStorageService productImageStorageService;
-    private static final String PUBLIC_IMAGE_PREFIX = "/images/";
-
     public ProductImageController(ProductRepository productRepository,
                                   ProductImageStorageService productImageStorageService) {
         this.productRepository = productRepository;
@@ -77,7 +75,8 @@ public class ProductImageController {
 
         try {
             String storedName = productImageStorageService.storeMainImage(file, productId);
-            return ResponseEntity.ok(PUBLIC_IMAGE_PREFIX + storedName);
+            String publicUrl = productImageStorageService.buildPublicImagePath(storedName);
+            return ResponseEntity.ok(publicUrl);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {

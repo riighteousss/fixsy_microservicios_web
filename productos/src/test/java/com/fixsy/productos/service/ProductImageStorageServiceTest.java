@@ -18,7 +18,7 @@ class ProductImageStorageServiceTest {
 
     @Test
     void storeMainImage_shouldSaveValidImage() throws IOException {
-        ProductImageStorageService service = new ProductImageStorageService(tempDir.toString());
+        ProductImageStorageService service = new ProductImageStorageService(tempDir.toString(), "http://test-server:8083");
         MockMultipartFile file = new MockMultipartFile("file", "main.png", "image/png", "img".getBytes());
 
         String stored = service.storeMainImage(file, 10L);
@@ -31,7 +31,7 @@ class ProductImageStorageServiceTest {
 
     @Test
     void storeMainImage_shouldRejectEmptyFile() {
-        ProductImageStorageService service = new ProductImageStorageService(tempDir.toString());
+        ProductImageStorageService service = new ProductImageStorageService(tempDir.toString(), "http://test-server:8083");
         MockMultipartFile file = new MockMultipartFile("file", "main.png", "image/png", new byte[0]);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> service.storeMainImage(file, 11L));
@@ -40,7 +40,7 @@ class ProductImageStorageServiceTest {
 
     @Test
     void storeMainImage_shouldRejectNonImage() {
-        ProductImageStorageService service = new ProductImageStorageService(tempDir.toString());
+        ProductImageStorageService service = new ProductImageStorageService(tempDir.toString(), "http://test-server:8083");
         MockMultipartFile file = new MockMultipartFile("file", "main.txt", "text/plain", "text".getBytes());
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> service.storeMainImage(file, 12L));
@@ -49,7 +49,7 @@ class ProductImageStorageServiceTest {
 
     @Test
     void storeMainImage_shouldRejectTooLarge() {
-        ProductImageStorageService service = new ProductImageStorageService(tempDir.toString());
+        ProductImageStorageService service = new ProductImageStorageService(tempDir.toString(), "http://test-server:8083");
         byte[] big = new byte[5 * 1024 * 1024 + 1];
         MockMultipartFile file = new MockMultipartFile("file", "main.jpg", "image/jpeg", big);
 
@@ -59,7 +59,7 @@ class ProductImageStorageServiceTest {
 
     @Test
     void storeGalleryImages_shouldStoreMultiple() throws IOException {
-        ProductImageStorageService service = new ProductImageStorageService(tempDir.toString());
+        ProductImageStorageService service = new ProductImageStorageService(tempDir.toString(), "http://test-server:8083");
         MockMultipartFile img1 = new MockMultipartFile("files", "g1.png", "image/png", "a".getBytes());
         MockMultipartFile img2 = new MockMultipartFile("files", "g2.png", "image/png", "b".getBytes());
 
@@ -73,7 +73,7 @@ class ProductImageStorageServiceTest {
 
     @Test
     void resolveProductImagePath_shouldBuildAbsolutePath() {
-        ProductImageStorageService service = new ProductImageStorageService(tempDir.toString());
+        ProductImageStorageService service = new ProductImageStorageService(tempDir.toString(), "http://test-server:8083");
         String filename = "product_7_main_1.png";
 
         Path resolved = service.resolveProductImagePath(filename);

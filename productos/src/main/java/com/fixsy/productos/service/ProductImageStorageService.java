@@ -19,15 +19,19 @@ import java.util.stream.Collectors;
 public class ProductImageStorageService {
 
     private final Path baseDirectory;
+    private final String publicBaseUrl;
     private static final String PUBLIC_IMAGE_PREFIX = "/images/";
 
-    public ProductImageStorageService(@Value("${file.upload-dir.products:src/main/java/com/fixsy/productos/images}") String uploadDir) {
+    public ProductImageStorageService(
+            @Value("${file.upload-dir.products:src/main/java/com/fixsy/productos/images}") String uploadDir,
+            @Value("${file.public-base-url:http://localhost:${server.port}}") String publicBaseUrl) {
         this.baseDirectory = Paths.get(uploadDir).toAbsolutePath().normalize();
         try {
             Files.createDirectories(this.baseDirectory);
         } catch (IOException e) {
             throw new IllegalStateException("No se pudo crear el directorio de subida de productos", e);
         }
+        this.publicBaseUrl = normalizePublicBaseUrl(publicBaseUrl);
     }
 
     public String storeMainImage(MultipartFile file, Long productId) throws IOException {
@@ -61,19 +65,29 @@ public class ProductImageStorageService {
     }
 
     public Path resolveProductImagePath(String storedPath) {
-        return this.baseDirectory.resolve(storedPath).normalize();
+        if (storedPath == null || storedPath.isBlank()) {
+            throw new IllegalArgumentException("El nombre de imagen es requerido");
+        }
+        if (isAbsoluteWebUrl(storedPath)) {
+            throw new IllegalArgumentException("La imagen proviene de una URL externa y no se puede resolver localmente");
+        }
+        String sanitized = stripImagePublicPrefix(storedPath);
+        if (sanitized.isBlank()) {
+            throw new IllegalArgumentException("El nombre de la imagen es invalido");
+        }
+        return this.baseDirectory.resolve(sanitized).normalize();
     }
 
     private void validateImage(MultipartFile file) {
         if (file.isEmpty()) {
-            throw new IllegalArgumentException("El archivo está vacío");
+            throw new IllegalArgumentException("El archivo estケ vacヴo");
         }
         String contentType = file.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {
             throw new IllegalArgumentException("Solo se permiten archivos de imagen");
         }
         if (file.getSize() > 5 * 1024 * 1024) {
-            throw new IllegalArgumentException("La imagen excede el tamaño máximo permitido (5MB)");
+            throw new IllegalArgumentException("La imagen excede el tamaヵo mケximo permitido (5MB)");
         }
     }
 
@@ -85,13 +99,21 @@ public class ProductImageStorageService {
     }
 
     public String buildPublicImagePath(String storedName) {
-        if (storedName == null || storedName.isBlank()) {
+        if (storedName == null) {
             return null;
         }
-        if (storedName.startsWith(PUBLIC_IMAGE_PREFIX)) {
-            return storedName;
+        String trimmed = storedName.trim();
+        if (trimmed.isEmpty()) {
+            return null;
         }
-        return PUBLIC_IMAGE_PREFIX + storedName;
+        if (isAbsoluteWebUrl(trimmed)) {
+            return trimmed;
+        }
+        String sanitizedName = stripImagePublicPrefix(trimmed);
+        if (sanitizedName.isEmpty()) {
+            return null;
+        }
+        return publicBaseUrl + PUBLIC_IMAGE_PREFIX + sanitizedName;
     }
 
     public List<String> buildPublicImagePaths(List<String> storedPaths) {
@@ -103,7 +125,38 @@ public class ProductImageStorageService {
                 .map(String::trim)
                 .filter(value -> !value.isBlank())
                 .map(this::buildPublicImagePath)
+                .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());
+    }
+
+    private String stripImagePublicPrefix(String value) {
+        if (value == null) {
+            return "";
+        }
+        String trimmed = value.trim();
+        if (trimmed.startsWith(PUBLIC_IMAGE_PREFIX)) {
+            trimmed = trimmed.substring(PUBLIC_IMAGE_PREFIX.length());
+        }
+        return trimmed;
+    }
+
+    private boolean isAbsoluteWebUrl(String value) {
+        if (value == null) {
+            return false;
+        }
+        String lower = value.trim().toLowerCase();
+        return lower.startsWith("http://") || lower.startsWith("https://");
+    }
+
+    private String normalizePublicBaseUrl(String baseUrl) {
+        if (baseUrl == null || baseUrl.isBlank()) {
+            baseUrl = "http://localhost:8083";
+        }
+        String normalized = baseUrl.trim();
+        if (normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        return normalized;
     }
 }
